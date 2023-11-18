@@ -16,13 +16,13 @@ const tableTitle = "home_system";
 const send = (content, targetEvent = null) => {
   const created = targetEvent ? targetEvent.created_at + 1 : currUnixtime();
   const ev = {
-    kind: 1,
+    kind: 42,
     content: content,
-    tags: [],
+    tags: targetEvent.tags,
     created_at: created,
   };
   if (targetEvent) {
-    ev.tags.push(["e", targetEvent.id]);
+    ev.tags.push(["e", targetEvent.id, "", "reply"]);
     ev.tags.push(["p", targetEvent.pubkey]);
   }
   postNostr(ev, nsec, relayUrl);
@@ -37,8 +37,8 @@ const main = async () => {
 
   await relay.connect();
   const sub = relay.sub([
-    // { kinds: [1], "#p": [getPublicKey(NPUB)], since: currUnixtime() - 60 },
-    { kinds: [1], since: currUnixtime() },
+     //{ kinds: [42], "#p": [npub], since: currUnixtime() - 60 },
+    { kinds: [42], since: currUnixtime() },
   ]);
 
   // リプライ返信
@@ -46,12 +46,12 @@ const main = async () => {
     if (ev.content.match(/^扉の状態は？$/i)) {
       // 扉の状態を取得して、返事する処理
       const single = await getSingle([relayUrl], npub, tableName, "door_status");
-      const result = single ?? "わかんない！"
+      const result = single ?? "知らんがな"
       send(result, ev);
     }
     if (ev.content.match(/^開けて$/i)) {
       // 扉を開けて、状態をDBに保存する処理
-      const values = [["door_status", "開いてる！"]];
+      const values = [["door_status", "開いてとるで"]];
       const table_ev = await upsertTableOrCreate(
         [relayUrl],
         npub,
@@ -61,11 +61,11 @@ const main = async () => {
         values
       );
       postNostr(table_ev, nsec, relayUrl);
-      send("開けたよ！", ev);
+      send("開けたで", ev);
     }
     if (ev.content.match(/^閉めて$/i)) {
       // 扉を閉めて、状態をDBに保存する処理
-      const values = [["door_status", "閉まってる！"]];
+      const values = [["door_status", "閉まっとるで"]];
       const table_ev = await upsertTableOrCreate(
         [relayUrl],
         npub,
@@ -75,10 +75,10 @@ const main = async () => {
         values
       );
       postNostr(table_ev, nsec, relayUrl);
-      send("閉めたよ！！", ev);
+      send("閉めたで", ev);
     }
     if (ev.content.match(/^光あれ$/i)) {
-      send("世界は光に包まれた", ev);
+      send("光無いで", ev);
     }
   });
 };
